@@ -12,7 +12,7 @@ This is currently a WIP (work-in-progress).
 ## How to use
 
 ```
-go get github.com/Made-in-Slovakia/go-pine@0.0.1
+go get github.com/Made-in-Slovakia/go-pine@latest
 ```
 
 ```
