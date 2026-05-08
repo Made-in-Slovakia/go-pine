@@ -7,7 +7,7 @@ This is currently a WIP (work-in-progress).
 ## Goals
 
  * Plain Go
- * No dependencies to modules ouside of Go core
+ * No dependencies to modules except Go standard libraries
 
 ## How to use
 
@@ -52,5 +52,6 @@ func main() {
 
 ## TODOs
 
-- [ ] TODOs in code
+- [ ] Resolve TODOs in code
+- [ ] Implementation of Unix sockets for Linux and MacOS version
 - [ ] Review from experienced Go developer

@@ -7,8 +7,9 @@ import (
 	"errors"
 )
 
-// TODO evalueate possibility of creating interface
-// TODO implementation and tests
+// TODO: evaluate possibility of creating interface
+// TODO: implementation and tests needed
+// TODO: limit build only to Linux and MacOS
 
 type socket struct {
 }

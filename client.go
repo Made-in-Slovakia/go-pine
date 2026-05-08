@@ -7,36 +7,52 @@ import (
 	"log"
 )
 
-// TODO evaluate possibility of adding TRACE log level or better log library
-// Set to true to enable debugging messages in logs.
+// If set to true, library will print debugging messages to log.
+//
+// TODO: evaluate possibility of adding TRACE log level
+// TODO: evaluate slog library
 var DebugLogEnabled bool = false
 
-// TODO rename this constant
-// Maximum number of commands sent in a batch.
+// Maximum number of commands sent in a single batch.
 const MaxBatchSize = 50000
 
+// Main PINE client struct.
+//
+// Client is not thread-safe and does not provide any synchronization or locking.
 type Client struct {
 	socket *socket
 }
 
-// Returns new PINE Client.
+// Returns a new PINE [Client].
 func NewClient(port int) *Client {
-	c := &Client{}
-	c.socket = &socket{port: port}
-	return c
+	return &Client{
+		socket: newSocket(port),
+	}
 }
 
+// Connects to the emulator.
 func (c *Client) Connect() error {
+	if c.socket == nil {
+		return errors.New("client is not properly initialized")
+	}
 	return c.socket.connect()
 }
 
+// Disconnects from the emulator.
 func (c *Client) Disconnect() error {
+	if c.socket == nil {
+		return errors.New("client is not properly initialized")
+	}
 	return c.socket.disconnect()
 }
 
+// Reads 4 bytes (32 bits) from the given addresses and returns them as uint32.
 func (c *Client) Read32(addresses []uint32) ([]uint32, error) {
 	if c.socket == nil {
 		return nil, errors.New("client is not properly initialized")
+	}
+	if len(addresses) == 0 {
+		return []uint32{}, nil
 	}
 
 	commands := make([]Command, len(addresses))
@@ -61,6 +77,10 @@ func (c *Client) Read32(addresses []uint32) ([]uint32, error) {
 	return results, nil
 }
 
+// Returns the emulator version.
+//
+// Content of version string is not specified in PINE standard, but in general, it should contain
+// emulator name and version, example "PCSX2 v2.6.3".
 func (c *Client) Version() (string, error) {
 	if c.socket == nil {
 		return "", errors.New("client is not properly initialized")
@@ -80,6 +100,7 @@ func (c *Client) Version() (string, error) {
 	return answer.ContentAsString()
 }
 
+// Returns the emulator status. Possible values are 0:Running, 1:Paused, 2:Shutdown.
 func (c *Client) Status() (uint32, error) {
 	if c.socket == nil {
 		return 0, errors.New("client is not properly initialized")
@@ -98,14 +119,15 @@ func (c *Client) Status() (uint32, error) {
 	return answer.ContentAsUint32()
 }
 
-// TODO docs
+// Sends multiple write [Command] needed to write the given string to the specified memory address.
+// Returns the number of commands sent.
 func (c *Client) SendWriteStringCommands(address uint32, input string) (int, error) {
 	return c.SendWriteBytesCommands(address, []byte(input))
 }
 
-// TODO docs
+// Sends multiple write [Command] needed to write the given bytes to the specified memory address.
+// Returns the number of commands sent.
 func (c *Client) SendWriteBytesCommands(address uint32, input []byte) (int, error) {
-	// TODO it is possible ignore this as everything else has fallback to empty slice or nil?
 	if len(input) == 0 {
 		// We can safely ignore empty input and return command counter = 0.
 		return 0, nil
@@ -118,7 +140,7 @@ func (c *Client) SendWriteBytesCommands(address uint32, input []byte) (int, erro
 	return len(commands), err
 }
 
-// Sends given Command to connected emulator and returns Answer.
+// Sends the given [Command] to the connected emulator and returns [Answer].
 func (c *Client) SendCommand(command Command) (Answer, error) {
 	answers, err := c.SendCommands([]Command{command})
 	if err != nil {
@@ -127,19 +149,11 @@ func (c *Client) SendCommand(command Command) (Answer, error) {
 	return answers[0], nil
 }
 
-// Sends given Commands to connected emulator and returns Answers.
+// Sends given [Command] to connected emulator and returns [Answer].
 func (c *Client) SendCommands(commands []Command) ([]Answer, error) {
 	if c.socket == nil {
 		return nil, errors.New("client is not properly initialized")
 	}
-
-	// Input validations
-	if commands == nil {
-		// TODO test if it is even possible send nil
-		// just defensive programming, this should never happen
-		return nil, nil
-	}
-	// TODO test this, maybe nil slice will be better
 	if len(commands) == 0 {
 		return []Answer{}, nil
 	}
@@ -157,7 +171,7 @@ func (c *Client) SendCommands(commands []Command) ([]Answer, error) {
 	}
 
 	if DebugLogEnabled {
-		log.Printf("PINE request message created, message=[% X]", request)
+		log.Printf("request message created, message=[% X]", request)
 	}
 
 	// Write data
@@ -167,17 +181,18 @@ func (c *Client) SendCommands(commands []Command) ([]Answer, error) {
 	}
 
 	if DebugLogEnabled {
-		log.Printf("PINE message sent, bytesSent=%d", b)
+		log.Printf("message sent, bytesSent=%d", b)
 	}
 
 	// Read data
+	// TODO: configurable size, or do it based on commands
 	response, err := c.socket.readBytes(1024)
 	if err != nil {
 		return nil, err
 	}
 
 	if DebugLogEnabled {
-		log.Printf("PINE response message received, message=[% X]", response)
+		log.Printf("response message received, message=[% X]", response)
 	}
 
 	if len(response) < 5 {
@@ -190,8 +205,10 @@ func (c *Client) SendCommands(commands []Command) ([]Answer, error) {
 
 	buf := bytes.NewBuffer(response)
 
-	// First 4 bytes are response message size followed by one byte for result code.
-	// We can skip those when reading this buffer.
+	// First 4 bytes are response message size followed by one byte for result code We can skip
+	// those when reading this buffer.
+	//
+	// TODO: we can create buffer with slice that has no first 5 bytes with 'response[5:]'
 	buf.Next(5)
 
 	rawAnswers := make([][]byte, len(commands))
@@ -199,20 +216,20 @@ func (c *Client) SendCommands(commands []Command) ([]Answer, error) {
 		var rawAnswer []byte
 
 		switch c.opCode {
-		case msgRead8:
+		case MsgRead8:
 			rawAnswer, err = nextBytes(buf, 1)
-		case msgRead16:
+		case MsgRead16:
 			rawAnswer, err = nextBytes(buf, 2)
-		case msgRead32:
+		case MsgRead32:
 			rawAnswer, err = nextBytes(buf, 4)
-		case msgRead64:
+		case MsgRead64:
 			rawAnswer, err = nextBytes(buf, 8)
-		case msgWrite8, msgWrite16, msgWrite32, msgWrite64, msgSaveState, msgLoadState:
+		case MsgWrite8, MsgWrite16, MsgWrite32, MsgWrite64, MsgSaveState, MsgLoadState:
 			// Empty response
 			rawAnswer = nil
-		case msgVersion, msgTitle, msgId, msgUuid, msgGameVersion:
+		case MsgVersion, MsgTitle, MsgId, MsgUuid, MsgGameVersion:
 			rawAnswer, err = nextString(buf)
-		case msgStatus:
+		case MsgStatus:
 			rawAnswer, err = nextBytes(buf, 4)
 		default:
 			return nil, fmt.Errorf("unsupported opCode in response, opCode=%X", c.opCode)
@@ -244,8 +261,7 @@ func (c *Client) SendCommands(commands []Command) ([]Answer, error) {
 	// This should never happen but we want be sure that caller always
 	// receive array of same size as given commands array.
 	if len(commands) != len(answers) {
-		// TODO better message
-		return nil, errors.New("wrong size of answers slice")
+		return nil, errors.New("number of commands and answers do not match")
 	}
 	return answers, nil
 }

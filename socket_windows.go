@@ -11,8 +11,12 @@ type socket struct {
 	connection net.Conn
 }
 
+func newSocket(port int) *socket {
+	return &socket{port: port}
+}
+
 func (s *socket) connect() error {
-	connection, err := net.Dial("tcp", "127.0.0.1:"+strconv.Itoa(s.port))
+	connection, err := net.Dial("tcp", "127.0.0.1:" + strconv.Itoa(s.port))
 	if err != nil {
 		return err
 	}
@@ -23,8 +27,7 @@ func (s *socket) connect() error {
 
 func (s *socket) readBytes(recvSize int) ([]byte, error) {
 	if s.connection == nil {
-		// TODO better message
-		return nil, errors.New("please call Connect first")
+		return nil, errors.New("not connected")
 	}
 
 	buffer := make([]byte, recvSize)
@@ -38,8 +41,7 @@ func (s *socket) readBytes(recvSize int) ([]byte, error) {
 
 func (s *socket) writeBytes(bytes []byte) (int, error) {
 	if s.connection == nil {
-		// TODO better message
-		return -1, errors.New("please call Connect first")
+		return -1, errors.New("not connected")
 	}
 
 	return s.connection.Write(bytes)

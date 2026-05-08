@@ -5,40 +5,40 @@ import (
 	"fmt"
 )
 
-// Deserializes given input using given opCode as identification of target type.
-func deserialize(opCode opCode, input []byte) (any, error) {
+// Deserializes the given input using the given opCode as identification of the target type.
+func deserialize(opCode OpCode, input []byte) (any, error) {
 	switch opCode {
-	case msgRead8:
+	case MsgRead8:
 		return toUint8(input)
-	case msgRead16:
+	case MsgRead16:
 		return toUint16(input)
-	case msgRead32:
+	case MsgRead32:
 		return toUint32(input)
-	case msgRead64:
+	case MsgRead64:
 		return toUint64(input)
-	case msgWrite8:
+	case MsgWrite8:
 		return "", nil
-	case msgWrite16:
+	case MsgWrite16:
 		return "", nil
-	case msgWrite32:
+	case MsgWrite32:
 		return "", nil
-	case msgWrite64:
+	case MsgWrite64:
 		return "", nil
-	case msgVersion:
+	case MsgVersion:
 		return toString(input), nil
-	case msgSaveState:
+	case MsgSaveState:
 		return "", nil
-	case msgLoadState:
+	case MsgLoadState:
 		return "", nil
-	case msgTitle:
+	case MsgTitle:
 		return toString(input), nil
-	case msgId:
+	case MsgId:
 		return toString(input), nil
-	case msgUuid:
+	case MsgUuid:
 		return toString(input), nil
-	case msgGameVersion:
+	case MsgGameVersion:
 		return toString(input), nil
-	case msgStatus:
+	case MsgStatus:
 		return toUint32(input)
 	default:
 		return nil, fmt.Errorf("unsupported opCode in response, opCode=%X", opCode)
@@ -73,9 +73,11 @@ func toUint64(b []byte) (uint64, error) {
 	return binary.LittleEndian.Uint64(b), nil
 }
 
+// Returns the given bytes as string. Removes null-termination byte and all possible garbage after
+// it.
+//
+// TODO: tests needed
 func toString(b []byte) string {
-	// Remove null-termination byte and all possible garbage after it.
-	// TODO tests needed
 	for i := 0; i < len(b); i++ {
 		if b[i] == 0 {
 			return string(b[:i])

@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 )
 
-// TODO Little and Big Endian should be configurable because it is emulator dependent.
+// TODO: Little and Big Endian should be configurable because it is emulator dependent.
 
 // Serializes given input to []byte.
 func fromUint8(input uint8) []byte {
@@ -34,6 +34,10 @@ func fromUint64(input uint64) []byte {
 }
 
 func toBytes(commands []Command) ([]byte, error) {
+	if len(commands) == 0 {
+		return []byte{4, 0, 0, 0}, nil
+	}
+
 	// First 4 bytes are size, including these 4 bytes that defines size.
 	messageSize := 4
 	for _, c := range commands {
