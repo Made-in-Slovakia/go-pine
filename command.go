@@ -210,3 +210,11 @@ func WriteBytesCommands(address uint32, values []byte) []Command {
 
 	return commands
 }
+
+// Returns a new [Command] with [OpCode] = [MsgUnimplemented].
+func EmptyCommand() Command {
+	return Command{
+		opCode:   MsgUnimplemented,
+		argument: nil,
+	}
+}

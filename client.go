@@ -56,8 +56,8 @@ func (c *Client) Read32(addresses []uint32) ([]uint32, error) {
 	}
 
 	commands := make([]Command, len(addresses))
-	for i, a := range addresses {
-		commands[i] = Read32Command(a)
+	for i, address := range addresses {
+		commands[i] = Read32Command(address)
 	}
 
 	answers, err := c.SendCommands(commands)
@@ -66,12 +66,12 @@ func (c *Client) Read32(addresses []uint32) ([]uint32, error) {
 	}
 
 	results := make([]uint32, len(answers))
-	for i, a := range answers {
-		v, err := a.ContentAsUint32()
+	for i, answer := range answers {
+		value, err := answer.ContentAsUint32()
 		if err != nil {
 			return nil, err
 		}
-		results[i] = v
+		results[i] = value
 	}
 
 	return results, nil
@@ -121,8 +121,8 @@ func (c *Client) Status() (uint32, error) {
 
 // Sends multiple write [Command] needed to write the given string to the specified memory address.
 // Returns the number of commands sent.
-func (c *Client) SendWriteStringCommands(address uint32, input string) (int, error) {
-	return c.SendWriteBytesCommands(address, []byte(input))
+func (c *Client) SendWriteStringCommands(address uint32, text string) (int, error) {
+	return c.SendWriteBytesCommands(address, []byte(text))
 }
 
 // Sends multiple write [Command] needed to write the given bytes to the specified memory address.
@@ -175,13 +175,13 @@ func (c *Client) SendCommands(commands []Command) ([]Answer, error) {
 	}
 
 	// Write data
-	b, err := c.socket.writeBytes(request)
+	bytesSent, err := c.socket.writeBytes(request)
 	if err != nil {
 		return nil, err
 	}
 
 	if DebugLogEnabled {
-		log.Printf("message sent, bytesSent=%d", b)
+		log.Printf("message sent, bytesSent=%d", bytesSent)
 	}
 
 	// Read data
@@ -203,36 +203,36 @@ func (c *Client) SendCommands(commands []Command) ([]Answer, error) {
 		return nil, errors.New("error in response")
 	}
 
-	buf := bytes.NewBuffer(response)
+	buffer := bytes.NewBuffer(response)
 
 	// First 4 bytes are response message size followed by one byte for result code We can skip
 	// those when reading this buffer.
 	//
 	// TODO: we can create buffer with slice that has no first 5 bytes with 'response[5:]'
-	buf.Next(5)
+	buffer.Next(5)
 
 	rawAnswers := make([][]byte, len(commands))
-	for i, c := range commands {
+	for i, command := range commands {
 		var rawAnswer []byte
 
-		switch c.opCode {
+		switch command.opCode {
 		case MsgRead8:
-			rawAnswer, err = nextBytes(buf, 1)
+			rawAnswer, err = nextBytes(buffer, 1)
 		case MsgRead16:
-			rawAnswer, err = nextBytes(buf, 2)
+			rawAnswer, err = nextBytes(buffer, 2)
 		case MsgRead32:
-			rawAnswer, err = nextBytes(buf, 4)
+			rawAnswer, err = nextBytes(buffer, 4)
 		case MsgRead64:
-			rawAnswer, err = nextBytes(buf, 8)
+			rawAnswer, err = nextBytes(buffer, 8)
 		case MsgWrite8, MsgWrite16, MsgWrite32, MsgWrite64, MsgSaveState, MsgLoadState:
 			// Empty response
 			rawAnswer = nil
 		case MsgVersion, MsgTitle, MsgId, MsgUuid, MsgGameVersion:
-			rawAnswer, err = nextString(buf)
+			rawAnswer, err = nextString(buffer)
 		case MsgStatus:
-			rawAnswer, err = nextBytes(buf, 4)
+			rawAnswer, err = nextBytes(buffer, 4)
 		default:
-			return nil, fmt.Errorf("unsupported opCode in response, opCode=%X", c.opCode)
+			return nil, fmt.Errorf("unsupported opCode in response, opCode=%X", command.opCode)
 		}
 
 		if err != nil {

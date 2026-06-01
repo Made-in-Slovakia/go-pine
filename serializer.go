@@ -40,25 +40,25 @@ func toBytes(commands []Command) ([]byte, error) {
 
 	// First 4 bytes are size, including these 4 bytes that defines size.
 	messageSize := 4
-	for _, c := range commands {
-		messageSize += c.len()
+	for _, command := range commands {
+		messageSize += command.len()
 	}
 
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.LittleEndian, uint32(messageSize))
+	buffer := new(bytes.Buffer)
+	binary.Write(buffer, binary.LittleEndian, uint32(messageSize))
 
-	for _, c := range commands {
-		err := binary.Write(buf, binary.LittleEndian, c.opCode)
+	for _, command := range commands {
+		err := binary.Write(buffer, binary.LittleEndian, command.opCode)
 		if err != nil {
 			return nil, err
 		}
-		if c.argument != nil {
-			err := binary.Write(buf, binary.LittleEndian, c.argument)
+		if command.argument != nil {
+			err := binary.Write(buffer, binary.LittleEndian, command.argument)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	return buf.Bytes(), nil
+	return buffer.Bytes(), nil
 }

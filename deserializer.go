@@ -45,43 +45,43 @@ func deserialize(opCode OpCode, input []byte) (any, error) {
 	}
 }
 
-func toUint8(b []byte) (uint8, error) {
-	if len(b) == 0 {
-		return 0, fmt.Errorf("expected size 1 but is %v", len(b))
+func toUint8(bytes []byte) (uint8, error) {
+	if len(bytes) == 0 {
+		return 0, fmt.Errorf("expected size 1 but is %v", len(bytes))
 	}
-	return b[0], nil
+	return bytes[0], nil
 }
 
-func toUint16(b []byte) (uint16, error) {
-	if len(b) < 2 {
-		return 0, fmt.Errorf("expected size 2 but is %v", len(b))
+func toUint16(bytes []byte) (uint16, error) {
+	if len(bytes) < 2 {
+		return 0, fmt.Errorf("expected size 2 but is %v", len(bytes))
 	}
-	return binary.LittleEndian.Uint16(b), nil
+	return binary.LittleEndian.Uint16(bytes), nil
 }
 
-func toUint32(b []byte) (uint32, error) {
-	if len(b) < 4 {
-		return 0, fmt.Errorf("expected size 4 but is %v", len(b))
+func toUint32(bytes []byte) (uint32, error) {
+	if len(bytes) < 4 {
+		return 0, fmt.Errorf("expected size 4 but is %v", len(bytes))
 	}
-	return binary.LittleEndian.Uint32(b), nil
+	return binary.LittleEndian.Uint32(bytes), nil
 }
 
-func toUint64(b []byte) (uint64, error) {
-	if len(b) < 8 {
-		return 0, fmt.Errorf("expected size 8 but is %v", len(b))
+func toUint64(bytes []byte) (uint64, error) {
+	if len(bytes) < 8 {
+		return 0, fmt.Errorf("expected size 8 but is %v", len(bytes))
 	}
-	return binary.LittleEndian.Uint64(b), nil
+	return binary.LittleEndian.Uint64(bytes), nil
 }
 
 // Returns the given bytes as string. Removes null-termination byte and all possible garbage after
 // it.
 //
 // TODO: tests needed
-func toString(b []byte) string {
-	for i := 0; i < len(b); i++ {
-		if b[i] == 0 {
-			return string(b[:i])
+func toString(bytes []byte) string {
+	for i := 0; i < len(bytes); i++ {
+		if bytes[i] == 0 {
+			return string(bytes[:i])
 		}
 	}
-	return string(b)
+	return string(bytes)
 }
