@@ -1,25 +1,31 @@
-//go:build windows
-// +build windows
+//go:build linux
+// +build linux
 
 package pine
 
 import (
 	"errors"
 	"net"
-	"strconv"
+	"os"
 )
 
 type socket struct {
-	port       int
+	slot       int
 	connection net.Conn
 }
 
-func newSocket(port int) *socket {
-	return &socket{port: port}
+func newSocket(slot int) *socket {
+	return &socket{slot: slot}
 }
 
 func (s *socket) connect() error {
-	connection, err := net.Dial("tcp", "127.0.0.1:" + strconv.Itoa(s.port))
+	socket_name := os.Getenv("XDG_RUNTIME_DIR")
+	if socket_name == "" {
+		socket_name = "/tmp"
+	}
+	socket_name += "/pcsx2.sock"
+
+	connection, err := net.Dial("unix", socket_name)
 	if err != nil {
 		return err
 	}
