@@ -56,7 +56,9 @@ func (e *Exchange) IsClosed() bool {
 	return e.closed
 }
 
-// Executes echange between the client and the emultor. Closes [Exchange].
+// Executes exchange between the client and the emulator.
+//
+// Closes [Exchange].
 func (e *Exchange) Execute() error {
 	if e.closed {
 		// When exchange is already closed, we can safely ignore this call.
@@ -73,6 +75,19 @@ func (e *Exchange) Execute() error {
 	return nil
 }
 
+// Executes exchange between the client and the emulator. Then calls the given callback function
+// with error or nil.
+//
+// Closes [Exchange].
+func (e *Exchange) ExecuteWithCallback(callback func(error)) {
+	if err := e.Execute(); err != nil {
+		callback(err)
+		return
+	}
+	callback(nil)
+}
+
+
 // Runs all callbacks.
 //
 // Callbacks can be executed only when [Exchange] is closed.
@@ -85,14 +100,16 @@ func (e *Exchange) RunCallbacks() error {
 		return errors.New("different amount of answers than callbacks")
 	}
 
-	for i, a := range e.answers {
-		e.callbacks[i](a)
+	for i, answer := range e.answers {
+		e.callbacks[i](answer)
 	}
 	return nil
 }
 
 // Runs [Exchange.Execute] followed by [Exchange.RunCallbacks] and calls the given callback function
 // with error or nil.
+//
+// Closes [Exchange].
 func (e *Exchange) ExecuteAndRunCallbacks(callback func(error)) {
 	// TODO check errors
 	if err := e.Execute(); err != nil {
@@ -151,6 +168,15 @@ func (e *Exchange) ReadString(position int) (string, error) {
 		return "", err
 	}
 	return e.answers[position].ContentAsString()
+}
+
+// Returns [Answer] content at the given position as float.
+func (e *Exchange) ReadFloat(position int) (float32, error) {
+	err := e.beforeReadChecks(position)
+	if err != nil {
+		return 0, err
+	}
+	return e.answers[position].ContentAsFloat()
 }
 
 func (e *Exchange) beforeReadChecks(position int) error {
