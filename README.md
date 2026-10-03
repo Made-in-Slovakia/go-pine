@@ -101,6 +101,10 @@ func main() {
 }
 ```
 
+## NO AI TRAINING
+
+NO AI TRAINING: Without in any way limiting the author’s [and publisher’s] exclusive rights under copyright, any use of this publication to “train” generative artificial intelligence (AI) technologies to generate text is expressly prohibited. The author reserves all rights to license uses of this work for generative AI training and development of machine learning language models.
+
 ## TODOs
 
 - [ ] Resolve TODOs in code
