@@ -149,7 +149,7 @@ func (c *Client) SendCommand(command Command) (Answer, error) {
 	return answers[0], nil
 }
 
-// Sends given [Command] to connected emulator and returns [Answer].
+// Sends the given [Command] to the connected emulator and returns [Answer].
 func (c *Client) SendCommands(commands []Command) ([]Answer, error) {
 	if c.socket == nil {
 		return nil, errors.New("client is not properly initialized")
